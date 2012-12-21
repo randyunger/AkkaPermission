@@ -2,6 +2,10 @@ package permit
 
 import akka.actor.{ActorRef, Actor}
 import collection.mutable
+import akka.pattern.ask
+import akka.util.Timeout
+import akka.util.duration._
+import akka.dispatch.Future
 
 
 /**
@@ -12,13 +16,24 @@ import collection.mutable
  */
 class Permit extends Actor {
 
-  val openTransactions = mutable.HashMap[Any, ActorRef]
+  implicit lazy val dur = 10000 milli
+  implicit lazy val timeout = Timeout(dur)
+
+  val openTransactions: mutable.HashMap[Any, Future[Any]] = mutable.HashMap.empty
 
   def receive = {
     case PermitRequest(r, a) => {
-      println("received permit request")
-      openTransactions += (a)
-      r ? Permission(a)
+      println("received permit request. Reqs: " + openTransactions)
+      val future = if (openTransactions.contains(a)) {
+        println("An open transaction already exists for " + a)
+        openTransactions(a)
+      } else {
+        println("Creating a new transaction for " + a)
+        val f = r ? Permission(a)
+        openTransactions += (a -> f)
+        f
+      }
+      sender ! future
     }
 
 //    case PermittedResponse(r, a) => {

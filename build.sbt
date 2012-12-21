@@ -2,7 +2,7 @@ name := "akka-permit"
 
 organization := "com.skechers"
 
-version := "0.0.1"
+version := "0.1.0"
 
 description := "Akka permission granter - allows only one request at a time"
 
