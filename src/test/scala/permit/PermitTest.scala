@@ -28,24 +28,24 @@ class PermitTest extends mutable.Specification {
   val op = new OrderProc                                      //Don't like having two!
 
   "Permit" should {
-//    "receive a message" in {
-//      op.processOrder(9834759, "fake.user")
-//      1 must be equalTo(1)
-//    }
+    "receive a message" in {
+      op.processOrder(9834759, "fake.user")
+      1 must be equalTo(1)
+    }
 
-//    "log with OrderDB" in {
-//      op.processOrder(476456345, "fake.user2")
-//      Thread.sleep(4000)
-//      OrderDB.ordersByUsername("fake.user2") must have size(1)
-//    }
+    "log with OrderDB" in {
+      op.processOrder(476456345, "fake.user2")
+      Thread.sleep(4000)
+      OrderDB.ordersByUsername("fake.user2") must have size(1)
+    }
 
-//    "only execute once" in {
-//      op.processOrder(476456345, "fake.user2")
-//      op.processOrder(476456345, "fake.user2")
-//      Thread.sleep(4000)
-//      OrderDB.ordersByUsername("fake.user2") must have size(1)
-//      println("DB ---- "+ OrderDB.db)
-//    }
+    "only execute once" in {
+      op.processOrder(476456345, "fake.user2")
+      op.processOrder(476456345, "fake.user2")
+      Thread.sleep(4000)
+      OrderDB.ordersByUsername("fake.user2") must have size(1)
+      println("DB ---- "+ OrderDB.db)
+    }
 
     "return the same id to client" in {
       val id1 = op.processOrder(476456345, "fake.user2")
@@ -97,34 +97,14 @@ class OrderProc {
 //    transId
   }
 
-//  protected def doProcessOrder = {
-//    case OrderData(upc, username) => {
-//      println("processing order for " + username)
-//      println("Contacting bank")
-//      Thread.sleep(200)
-//      println("Charging account")
-//      Thread.sleep(200)
-//      println("Writing transaction to DB")
-//  //    if (util.Random.nextBoolean) throw new Exception("random errrror")
-//      OrderDB.logOrder(OrderData(upc, username))
-//      Thread.sleep(1000)
-//      val transactionId = util.Random.nextInt(100)
-//      println("Created transaction " + transactionId +" for " + username)
-//      transactionId
-//    }
-//    case _ => -1
-//  }
-
-  protected val doProcessOrder: OrderData => Int = od => {
-    val upc = od.upc
-    val username = od.username
+  protected def doProcessOrder(upc:Long, username: String): Int = {
     println("processing order for " + username)
     println("Contacting bank")
     Thread.sleep(200)
     println("Charging account")
     Thread.sleep(200)
     println("Writing transaction to DB")
-    //    if (util.Random.nextBoolean) throw new Exception("random errrror")
+//    if (util.Random.nextBoolean) throw new Exception("random errrror")
     OrderDB.logOrder(OrderData(upc, username))
     Thread.sleep(1000)
     val transactionId = util.Random.nextInt(100)
@@ -134,34 +114,17 @@ class OrderProc {
 }
 
 case class OrderData(upc: Long, username: String)
-trait PermitActor extends  Actor {
+class OrderProcActor extends  OrderProc with Actor {
 //  val orderProc = new OrderProc
-//  val inputMap: Map[Class[_], Function[Any,Any]]
-  val c:Class[_]
-  val f: Function1[Any, Nothing]
 
   protected def receive = {
-    case Permission(c) => {
-//      val func = inputMap(c.getClass)
-//      func(c)
+    case Permission(OrderData(upc, username)) => sender ! doProcessOrder(upc, username)//r ? PermittedResponse(self, doProcessOrder(upc, username))
+    case OrderData(upc, username) => {
+      val req = (PermitTest.permitter ? PermitRequest(self, OrderData(upc, username)))
+//      val res = Await.result(Await.result(req, dur).asInstanceOf[Awaitable[Any]],dur)
+//      sender ! res
+      sender ! req
     }
-    case x => println("not found: " + x)
+    case a => println("received unknown: " + a)
   }
-
-//  protected def receive = {
-//    case Permission(OrderData(upc, username)) => sender ! doProcessOrder(upc, username)//r ? PermittedResponse(self, doProcessOrder(upc, username))
-//    case OrderData(upc, username) => {
-//      val req = (PermitTest.permitter ? PermitRequest(self, OrderData(upc, username)))
-////      val res = Await.result(Await.result(req, dur).asInstanceOf[Awaitable[Any]],dur)
-////      sender ! res
-//      sender ! req
-//    }
-//    case a => println("received unknown: " + a)
-//  }
-}
-
-class OrderProcActor extends OrderProc with PermitActor {
-  val c = classOf[OrderData]
-  val f = doProcessOrder
-//  val inputMap = Map(classOf[OrderData] -> doProcessOrder _)
 }
