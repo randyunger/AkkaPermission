@@ -3,7 +3,7 @@ AkkaPermission
 
 Summary
 --------
-Request permission from a centralized Akka actor to perform any action. Allows non-blocking coordination for distributed systems.
+Request permission from a centralized Akka actor to perform any action. Allows lock free de-duplication of invocations for distributed systems.
 
 This is very much a work-in-progress. More of a proof-of concept than anything else.
 
